@@ -21,7 +21,7 @@ class x264Model:
 
     def getTasks( self ):
         for task in self.__taskQueue:
-            print task.options['id'], task.getOptions()['inputDirectory']
+            print task.getOptions()['id'], task.getOptions()['inputDirectory']
 
     def updateIDs( self ):
         for i in range( len( self.__taskQueue ) ):

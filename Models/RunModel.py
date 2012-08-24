@@ -25,7 +25,7 @@ class RunModel:
             t = Thread( target = self.processTask, args = ( task, ) )
             t.start()
             publisher.sendMessage( "QUEUE_PROCESSING_DIRECTORY",
-                             task.getOptions()['inputDirectory'] )
+                             task.getOptions()['outputDirectory'] )
             publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'In Progress' )
             task.setStatus( 'In Progress' )
             t.join()

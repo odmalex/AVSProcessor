@@ -17,7 +17,8 @@ class x264Controller:
 
         publisher.subscribe( self.updateQueueProcessingDirectory,
                        'QUEUE_PROCESSING_DIRECTORY' )
-        publisher.subscribe( self.updateQueueProcessedFiles, 'QUEUE_PROCESSED_FILES' )
+        publisher.subscribe( self.updateQueueProcessedFiles,
+                             'QUEUE_PROCESSED_FILES' )
         publisher.subscribe( self.updateQueueProcessingStatus,
                        'QUEUE_PROCESSING_STATUS' )
         publisher.subscribe( self.updateQueueProcessingStatuses,
@@ -25,26 +26,31 @@ class x264Controller:
         publisher.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
 
     def processingFinish( self, message ):
-        self.x264.enableButtons()
+        self.enableButtons()
 
     def updateQueueProcessingDirectory( self, message ):
-        self.currentProcessingDirectory = message.data
+        self.currentProcessingOutputDirectory = message.data
 
     def updateQueueProcessedFiles( self, message ):
-        self.updateColumns( 1, message.data )
-
-    def updateQueueProcessingStatus( self, message ):
         self.updateColumns( 2, message.data )
 
+    def updateQueueProcessingStatus( self, message ):
+        self.updateColumns( 3, message.data )
+
     def updateQueueProcessingStatuses( self, message ):
-        cl = self.x264.getColumnList( 2 )
+        cl = self.getColumnList( 3 )
         for i in range( len( cl ) ):
             if not cl[i] == 'Completed':
-                self.x264.setListItem( i, 2, message.data )
+                self.setListItem( i, 3, message.data )
 
     def updateColumns( self, column, data ):
-        id = self.x264.getColumnItemIndex( 0, self.currentProcessingDirectory )
-        self.x264.setListItem( id, column, data )
+        tasks = self.x264Model.getTaskQueue()
+        id = 0
+        for task in tasks:
+            if task.getOptions()['outputDirectory'] == self.currentProcessingOutputDirectory:
+                break
+            id += 1
+        self.setListItem( id, column, data )
 
     def loadOptions( self ):
         self.x264.setProfileDirectory( Configuration.get( 'directories',
@@ -103,16 +109,19 @@ class x264Controller:
 
     def eventAddTask( self, event ):
         if self.checkIntegrity():
-            if self.x264.getInputDirectory() in self.x264.getColumnList( 0 ):
-                wx.MessageBox( 'Directory already in the list!', 'Warning',
-                               wx.OK )
+            input, profile = self.checkOutputDirectory()
+            if input:
+                wx.MessageBox( 'You have already assigned this output directory to "%s" with \
+profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
+                                   wx.OK )
             else:
                 columns = []
                 columns.append( self.x264.getInputDirectory() )
+                columns.append( self.x264.getProfile() )
                 columns.append( "" )
                 columns.append( "Added" )
-                id = self.x264.addListItem( columns )
-                self.x264Model.addTask( id, self.x264.getTaskOptions() )
+                id = self.addListItem( columns )
+                self.x264Model.addTask( id, self.getTaskOptions() )
                 publisher.sendMessage( 'LOG', 'i6' )
 
     def eventRemoveTask( self, event ):
@@ -129,7 +138,7 @@ class x264Controller:
             PreviewController( task )
 
     def eventRunAll( self, event ):
-        self.x264.disableButtons()
+        self.disableButtons()
         taskQueue = self.x264Model.getTaskQueue()
         rc = RunController( taskQueue )
         publisher.sendMessage( 'LOG', 'i8' )
@@ -241,3 +250,66 @@ class x264Controller:
         else:
             return True
         return False
+
+
+    def getTaskOptions( self ):
+        opt = {}
+        opt['inputDirectory'] = self.x264.getInputDirectory()
+        opt['outputDirectory'] = self.x264.getOutputDirectory()
+        opt['profileDirectory'] = self.x264.getProfileDirectory()
+        opt['profile'] = self.x264.getProfile()
+        opt['videoOutputFormat'] = self.x264.getVideoOutputFormat()
+        opt['videoCmdOptions'] = self.x264.getVideoCmdOptions()
+        opt['videoTwoPass'] = self.x264.getVideoTwoPass()
+        opt['audioOutputFormat'] = self.x264.getAudioOutputFormat()
+        opt['audioCmdOptions'] = self.x264.getAudioCmdOptions()
+        opt['audioBitrate'] = self.x264.getAudioBitrate()
+        opt['audioFrequencySample'] = self.x264.getAudioFrequencySample()
+        opt['muxOutputFormat'] = self.x264.getMuxOutputFormat()
+
+        return opt
+
+    def addListItem( self, columns ):
+        count = self.x264.getQueueList().GetItemCount()
+        pos = self.x264.getQueueList().InsertStringItem( count, columns[0] )
+        self.x264.getQueueList().SetStringItem( pos, 1, columns[1] )
+        self.x264.getQueueList().SetStringItem( pos, 2, columns[2] )
+        self.x264.getQueueList().SetStringItem( pos, 3, columns[3] )
+        return pos
+
+    def setListItem( self, row, column, data ):
+        self.x264.queueListCtrl.SetStringItem( row, column, data )
+
+    def getColumnList( self, column ):
+        list = []
+        count = self.x264.getQueueList().GetItemCount()
+        for row in range( count ):
+            item = self.x264.getQueueList().GetItem( itemId = row, col = column )
+            list.append( item.GetText() )
+        return list
+
+    def checkOutputDirectory( self ):
+        tasks = self.x264Model.getTaskQueue()
+        for task in tasks:
+            output = task.getOptions()['outputDirectory']
+            if output == self.x264.getOutputDirectory():
+                return ( task.getOptions()['inputDirectory'],
+                        task.getOptions()['profile'] )
+        return ( 0, 0 )
+
+    def getColumnItemIndex( self, column, data ):
+        list = self.getColumnList( column )
+        try:
+            return list.index( data )
+        except:
+            return -1
+
+    def enableButtons( self ):
+        self.x264.addTaskButton.Enable()
+        self.x264.removeTaskButton.Enable()
+        self.x264.runAllButton.Enable()
+
+    def disableButtons( self ):
+        self.x264.addTaskButton.Disable()
+        self.x264.removeTaskButton.Disable()
+        self.x264.runAllButton.Disable()

@@ -73,11 +73,14 @@ class x264View( wx.Panel ):
 
         self.processingDirectoryColumn = self.queueListCtrl.InsertColumn( 0,
                                                         "Processing directory" )
-        self.processedFilesColumn = self.queueListCtrl.InsertColumn( 1,
+        self.profileColumn = self.queueListCtrl.InsertColumn( 1,
+                                                        "Profile" )
+        self.processedFilesColumn = self.queueListCtrl.InsertColumn( 2,
                                                         "Processed files" )
-        self.statusColumn = self.queueListCtrl.InsertColumn( 2, "Status" )
-        self.queueListCtrl.SetColumnWidth( self.processingDirectoryColumn, 400 )
+        self.statusColumn = self.queueListCtrl.InsertColumn( 3, "Status" )
+        self.queueListCtrl.SetColumnWidth( self.processingDirectoryColumn, 300 )
         self.queueListCtrl.SetColumnWidth( self.processedFilesColumn, 100 )
+        self.queueListCtrl.SetColumnWidth( self.profileColumn, 100 )
         self.addTaskButton = wx.Button( self, -1, "Add task" )
         self.removeTaskButton = wx.Button( self, -1, "Remove task" )
         self.previewTaskButton = wx.Button( self, -1, "Preview task" )
@@ -326,54 +329,4 @@ class x264View( wx.Panel ):
     def getQueueList( self ):
         return self.queueListCtrl
 
-    def getTaskOptions( self ):
-        opt = {}
-        opt['inputDirectory'] = self.getInputDirectory()
-        opt['outputDirectory'] = self.getOutputDirectory()
-        opt['profileDirectory'] = self.getProfileDirectory()
-        opt['profile'] = self.getProfile()
-        opt['videoOutputFormat'] = self.getVideoOutputFormat()
-        opt['videoCmdOptions'] = self.getVideoCmdOptions()
-        opt['videoTwoPass'] = self.getVideoTwoPass()
-        opt['audioOutputFormat'] = self.getAudioOutputFormat()
-        opt['audioCmdOptions'] = self.getAudioCmdOptions()
-        opt['audioBitrate'] = self.getAudioBitrate()
-        opt['audioFrequencySample'] = self.getAudioFrequencySample()
-        opt['muxOutputFormat'] = self.getMuxOutputFormat()
 
-        return opt
-
-    def addListItem( self, columns ):
-        count = self.getQueueList().GetItemCount()
-        pos = self.getQueueList().InsertStringItem( count, columns[0] )
-        self.getQueueList().SetStringItem( pos, 1, columns[1] )
-        self.getQueueList().SetStringItem( pos, 2, columns[2] )
-        return pos
-
-    def setListItem( self, row, column, data ):
-        self.queueListCtrl.SetStringItem( row, column, data )
-
-    def getColumnList( self, column ):
-        list = []
-        count = self.getQueueList().GetItemCount()
-        for row in range( count ):
-            item = self.getQueueList().GetItem( itemId = row, col = column )
-            list.append( item.GetText() )
-        return list
-
-    def getColumnItemIndex( self, column, data ):
-        list = self.getColumnList( column )
-        try:
-            return list.index( data )
-        except:
-            return -1
-
-    def enableButtons( self ):
-        self.addTaskButton.Enable()
-        self.removeTaskButton.Enable()
-        self.runAllButton.Enable()
-
-    def disableButtons( self ):
-        self.addTaskButton.Disable()
-        self.removeTaskButton.Disable()
-        self.runAllButton.Disable()
