@@ -5,6 +5,7 @@ from pubsub import  pub
 from threading import Thread
 from subprocess import Popen, PIPE, STDOUT
 from pprint import pprint
+from Subprocess import Subprocess
 publisher = pub.Publisher()
 
 class RunModel:
@@ -23,16 +24,14 @@ class RunModel:
             if task.getStatus() == 'Completed':
                 continue
             t = Thread( target = self.processTask, args = ( task, ) )
+
             t.start()
-            publisher.sendMessage( "QUEUE_PROCESSING_DIRECTORY",
-                             task.getOptions()['outputDirectory'] )
-            publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'In Progress' )
-            task.setStatus( 'In Progress' )
+            self.taskLogging( 'start', task )
+
             t.join()
-            publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'Completed' )
-            task.setStatus( 'Completed' )
-        publisher.sendMessage( "PROCESSING_FINISH", '' )
-        publisher.sendMessage( 'LOG', 'i9' )
+            self.taskLogging( 'finish', task )
+
+        self.taskLogging( 'finish_all' )
 
     def processTask( self, task ):
         self.inputDirectory = task.getOptions()['inputDirectory']
@@ -46,23 +45,15 @@ class RunModel:
             commands = self.com.getCommands( avs )
             self.setCommands( commands )
 
-            publisher.sendMessage( "PROCESSING_FILE", 'Processing file: %s' % avs )
-            publisher.sendMessage( "QUEUE_PROCESSED_FILES", '%d/%d' %
-                                                      ( i, totalFiles ) )
+            self.avsFileLogging( 'processing', avs, i, totalFiles )
             c = Thread( target = self.runCommands, args = () )
             c.start()
             c.join()
             i += 1
-        publisher.sendMessage( "QUEUE_PROCESSED_FILES", '%d/%d' %
-                                                      ( i, totalFiles ) )
+        self.avsFileLogging( 'finished', i, totalFiles )
 
     def runCommands( self ):
-        publisher.sendMessage( "VIDEO_GAUGE", 0 )
-        publisher.sendMessage( "VIDEO_LABEL", 'Extracting video...' )
-        publisher.sendMessage( "AUDIO_GAUGE", 0 )
-        publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio...' )
-        publisher.sendMessage( "MUX_GAUGE", 0 )
-        publisher.sendMessage( "MUX_LABEL", 'Waiting for multiplexing...' )
+        self.commandLogging( 'init' )
 
         v = Thread( target = self.extractVideo, args = ( False, ) )
         a = Thread( target = self.extractAudio, args = () )
@@ -87,75 +78,144 @@ class RunModel:
         else:
             extra = ''
 
-        publisher.sendMessage( "VIDEO_GAUGE", 0 )
-        publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... 0%' + extra )
-        proc = Popen( self.__vcommand, universal_newlines = True, stdout = PIPE,
-                      stderr = STDOUT, shell = True )
-        while ( proc.poll() is None ):
+        self.commandLogging( 'video_start', extra )
+        video_process = Subprocess( self.__vcommand )
+        video_process.execute()
+        while ( video_process.poll() is None ):
             try:
-                line = proc.stdout.readline()
-                publisher.sendMessage( 'LOG_VIDEO', line.strip( '\n' ) )
-                publisher.sendMessage( "VIDEO_OUTPUT", line )
-                if line.split()[0] == 'encoded':
+                line = video_process.readline()
+                perc = self.parseLine( 'video', line )
+                if perc == -1:
                     break
-                perc = line.split( '[' )[1].split( '.' )[0]
-                self.videoCurr = int( perc )
-                publisher.sendMessage( "VIDEO_GAUGE", self.videoCurr )
-                publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... %d%%' %
-                                 self.videoCurr + extra )
+                self.commandLogging( 'video_during', line, perc, extra )
             except:
                 pass
-
-        publisher.sendMessage( "VIDEO_GAUGE", 100 )
-        publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... 100%' + extra )
+        self.commandLogging( 'video_finish', extra )
 
     def extractAudio( self ):
-        publisher.sendMessage( "AUDIO_GAUGE", 0 )
-        publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... 0%' )
-        proc = Popen( self.__acommand, universal_newlines = True, stdout = PIPE,
-                      stderr = STDOUT, shell = True )
-        while ( proc.poll() is None ):
+        self.commandLogging( 'audio_start' )
+        audio_process = Subprocess( self.__acommand )
+        audio_process.execute()
+
+        while ( audio_process.poll() is None ):
             try:
-                line = proc.stdout.readline()
-                publisher.sendMessage( 'LOG_AUDIO', line.strip( '\n' ) )
-                publisher.sendMessage( "AUDIO_OUTPUT", line )
-                perc = line.split( '[' )[1].split( '.' )[0]
-#                perc = line.split( '%' )[0].split( '>>>' )[1].split( '.' )[0]
-                self.audioCurr = int( perc.strip() )
-                publisher.sendMessage( "AUDIO_GAUGE", self.audioCurr )
-                publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... %d%%' %
-                                 self.audioCurr )
+                line = audio_process.readline()
+                perc = self.parseLine( 'audio', line )
+                self.commandLogging( 'audio_during', line, perc )
             except:
                 pass
-
-        publisher.sendMessage( "AUDIO_GAUGE", 100 )
-        publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... 100%' )
+        self.commandLogging( 'audio_finish' )
 
     def mux( self ):
-        proc = Popen( self.__mcommand, universal_newlines = True, stdout = PIPE,
-                      stderr = STDOUT, shell = True )
-
-        while ( proc.poll() is None ):
+        self.commandLogging( 'mux_start' )
+        mux_process = Subprocess( self.__mcommand )
+        mux_process.execute()
+        while ( mux_process.poll() is None ):
             try:
-                line = proc.stdout.readline()
-                publisher.sendMessage( 'LOG_MUX', line.strip( '\n' ) )
-                publisher.sendMessage( "MUX_OUTPUT", line )
+                line = mux_process.readline()
+                perc = self.parseLine( 'mux', line )
+                self.commandLogging( 'mux_during', line, perc )
+            except:
+                pass
+        self.commandLogging( 'mux_finish' )
+
+    def taskLogging( self, phase, task = None ):
+        if phase == 'start':
+            publisher.sendMessage( "QUEUE_PROCESSING_DIRECTORY",
+                             task.getOptions()['outputDirectory'] )
+            publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'In Progress' )
+            task.setStatus( 'In Progress' )
+        elif phase == 'finish':
+            publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'Completed' )
+            task.setStatus( 'Completed' )
+        elif phase == 'finish_all':
+            publisher.sendMessage( "PROCESSING_FINISH", '' )
+            publisher.sendMessage( 'LOG', 'i9' )
+
+    def avsFileLogging( self, phase, *args ):
+        if phase == 'processing':
+            publisher.sendMessage( "PROCESSING_FILE", 'Processing file: %s' %
+                                   args[0] )
+            publisher.sendMessage( "QUEUE_PROCESSED_FILES", '%d/%d' %
+                                                      ( args[1], args[2] ) )
+        elif phase == 'finished':
+            publisher.sendMessage( "QUEUE_PROCESSED_FILES", '%d/%d' %
+                                                      ( args[0], args[1] ) )
+
+    def commandLogging( self, phase, *args ):
+        if phase == 'init':
+            publisher.sendMessage( "VIDEO_GAUGE", 0 )
+            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video...' )
+            publisher.sendMessage( "AUDIO_GAUGE", 0 )
+            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio...' )
+            publisher.sendMessage( "MUX_GAUGE", 0 )
+            publisher.sendMessage( "MUX_LABEL", 'Waiting for multiplexing...' )
+        elif phase == 'video_start':
+            publisher.sendMessage( "VIDEO_GAUGE", 0 )
+            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... 0%' +
+                                   args[0] )
+        elif phase == 'video_during':
+            publisher.sendMessage( 'LOG_VIDEO', args[0].strip( '\n' ) )
+            publisher.sendMessage( "VIDEO_OUTPUT", args[0] )
+            publisher.sendMessage( "VIDEO_GAUGE", args[1] )
+            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... %d%%' %
+                                   args[1] + args[2] )
+        elif phase == 'video_finish':
+            publisher.sendMessage( "VIDEO_GAUGE", 100 )
+            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... 100%' +
+                                   args[0] )
+        elif phase == 'audio_start':
+            publisher.sendMessage( "AUDIO_GAUGE", 0 )
+            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... 0%' )
+        elif phase == 'audio_during':
+            publisher.sendMessage( 'LOG_AUDIO', args[0].strip( '\n' ) )
+            publisher.sendMessage( "AUDIO_OUTPUT", args[0] )
+            publisher.sendMessage( "AUDIO_GAUGE", args[1] )
+            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... %d%%' %
+                             args[1] )
+        elif phase == 'audio_finish':
+            publisher.sendMessage( "AUDIO_GAUGE", 100 )
+            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... 100%' )
+        elif phase == 'mux_start':
+            publisher.sendMessage( "MUX_GAUGE", 0 )
+            publisher.sendMessage( "MUX_LABEL", 'Multiplexing... 0%' )
+        elif phase == 'mux_during':
+            publisher.sendMessage( 'LOG_MUX', args[0].strip( '\n' ) )
+            publisher.sendMessage( "MUX_OUTPUT", args[0] )
+            publisher.sendMessage( "MUX_GAUGE", args[1] )
+            publisher.sendMessage( "MUX_LABEL", 'Multiplexing... %d%%' %
+                             args[1] )
+        elif phase == 'mux_finish':
+            publisher.sendMessage( "MUX_GAUGE", 100 )
+            publisher.sendMessage( "MUX_LABEL", 'Multiplexing... 100%' )
+
+    def parseLine( self, type, line ):
+        if type == 'video':
+            try:
+                if line.split()[0] == 'encoded':
+                    return -1
+                perc = line.split( '[' )[1].split( '.' )[0]
+                return int( perc )
+            except:
+                pass
+        elif type == 'audio':
+            try:
+                perc = line.split( '[' )[1].split( '.' )[0]
+    #            perc = line.split( '%' )[0].split( '>>>' )[1].split( '.' )[0]
+                return int( perc.strip() )
+            except:
+                pass
+        elif type == 'mux':
+            try:
                 perc = int( line.split( '(' )[1].split( '/' )[0] )
                 tokens = line.split()
                 if tokens[1] == 'ISO':
                     perc += 100
                 elif tokens[1] == 'File':
                     perc += 200
-                self.muxCurr = int( int( perc ) / 3 )
-                publisher.sendMessage( "MUX_GAUGE", self.muxCurr )
-                publisher.sendMessage( "MUX_LABEL", 'Multiplexing... %d%%' %
-                                 self.muxCurr )
+                return int( int( perc ) / 3 )
             except:
                 pass
-
-        publisher.sendMessage( "MUX_GAUGE", 100 )
-        publisher.sendMessage( "MUX_LABEL", 'Multiplexing... 100%' )
-
 
 if __name__ == '__main__':
     pass

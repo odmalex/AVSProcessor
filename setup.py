@@ -15,7 +15,7 @@ setup( windows = [
                  ],
        options = {
                   "py2exe":{
-                            "dist_dir": r"C:\Users\Administrator\Desktop\AVSProcessor",
+                            "dist_dir": r"C:\Users\Administrator\Desktop\AVSProcessor 1.1",
                             "packages": "pubsub"
                             }
                  }

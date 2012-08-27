@@ -58,7 +58,7 @@ class MainFrameController:
         info = wx.AboutDialogInfo()
         info.SetIcon( wx.Icon( '.\\images\\odmedia.png', wx.BITMAP_TYPE_PNG ) )
         info.SetName( 'AVS Processor' )
-        info.SetVersion( '1.0' )
+        info.SetVersion( '1.1' )
         info.SetDescription( 'Compilation of AVS processing tools.' )
         info.SetCopyright( '(C) 2012 - ODMedia' )
         info.SetWebSite( 'http://www.odmedia.nl' )
