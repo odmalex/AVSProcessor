@@ -35,6 +35,17 @@ class Commands:
                                      os.path.basename( filename ) ) + \
                                      '.audio.' + self.audioOutputFormat
 
+        ###########################################
+        leonardo = Configuration.all['leonardo']
+        if leonardo['use']:
+            fileName = ''
+            fileName += leonardo['language'] + '_'
+            fileName += leonardo['variant'] + '_'
+            fileName += leonardo['owner'] + '_'
+            fileName += leonardo['copyright'] + '_'
+            fileName += leonardo['aspect_ratio']
+        ###########################################
+
         self.output_mux = os.path.join( self.outputDirectory,
                                    os.path.basename( filename ) ) + \
                                    '.' + self.muxOutputFormat

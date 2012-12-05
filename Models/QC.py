@@ -8,10 +8,10 @@ class QC:
         if not os.path.exists( directory ):
             try:
                 os.mkdir( directory )
-                return True
+                return directory
             except:
                 return False
-        return True
+        return directory
 
     @staticmethod
     def checkFile( srcFile, destDir ):

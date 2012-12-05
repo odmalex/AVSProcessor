@@ -6,6 +6,7 @@ class x264View( wx.Panel ):
         self.parent = parent
         self.x264 = ''
 
+        self.leonardo_settings = False;
         self.inputDirectoryStaticText = wx.StaticText( self, -1,
                                                        "Input       " )
         self.inputDirectoryTextCtrl = wx.TextCtrl( self, -1, "" )
@@ -86,6 +87,10 @@ class x264View( wx.Panel ):
         self.previewTaskButton = wx.Button( self, -1, "Preview task" )
         self.runAllButton = wx.Button( self, -1, "Run all" )
         self.static_line_3 = wx.StaticLine( self, -1 )
+        self.static_line_4 = wx.StaticLine( self, -1 )
+
+        self.useLeonardoCheckBox = wx.CheckBox( self, -1, "Use Leonardo naming scheme" )
+        self.leonardoSettingsButton = wx.Button( self, -1, "Settings" )
 
         self.__set_properties()
         self.__do_layout()
@@ -111,6 +116,7 @@ class x264View( wx.Panel ):
         mainSizer = wx.FlexGridSizer( wx.VERTICAL )
         x264Sizer = wx.GridSizer( 3, 1, 5, 5 )
         buttonsSizer = wx.BoxSizer( wx.HORIZONTAL )
+        leonardoSizer = wx.BoxSizer( wx.HORIZONTAL )
         settingsSizer = wx.BoxSizer( wx.HORIZONTAL )
         self.muxSettingsSizer_staticbox.Lower()
         muxSettingsSizer = wx.StaticBoxSizer( self.muxSettingsSizer_staticbox,
@@ -232,9 +238,16 @@ class x264View( wx.Panel ):
         buttonsSizer.Add( self.previewTaskButton, 0, 0, 0 )
         buttonsSizer.Add( self.runAllButton, 0, wx.LEFT, 350 )
 
+        leonardoSizer.Add( self.useLeonardoCheckBox, wx.ALL |
+                                  wx.ALIGN_CENTER_VERTICAL, 5 )
+        leonardoSizer.Add( self.leonardoSettingsButton, 0, wx.LEFT, 20 )
+
 #        queueListSizer()
         mainSizer.Add( x264Sizer, 1, wx.ALL | wx.EXPAND, 10 )
         mainSizer.Add( self.static_line_3, 0, wx.EXPAND, 0 )
+        mainSizer.Add( leonardoSizer, 1, wx.ALL, 10 )
+
+        mainSizer.Add( self.static_line_4, 0, wx.EXPAND, 0 )
         mainSizer.Add( buttonsSizer, 1, wx.ALL | wx.EXPAND, 10 )
         mainSizer.Add( self.queueListCtrl, 1, wx.ALL | wx.EXPAND, 1 )
         self.SetSizer( mainSizer )
@@ -290,6 +303,9 @@ class x264View( wx.Panel ):
     def setMuxOutputFormat( self, f ):
         self.muxOutputFormatComboBox.SetValue( f )
 
+    def setUseLeonardo( self, s ):
+        self.useLeonardoCheckBox.SetValue( s )
+
     def getInputDirectory( self ):
         return self.inputDirectoryTextCtrl.GetValue()
 
@@ -329,4 +345,6 @@ class x264View( wx.Panel ):
     def getQueueList( self ):
         return self.queueListCtrl
 
+    def getUseLeonardo( self ):
+        return self.useLeonardoCheckBox.GetValue()
 

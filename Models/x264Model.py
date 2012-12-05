@@ -29,3 +29,4 @@ class x264Model:
 
     def getTaskQueue( self ):
         return self.__taskQueue
+
