@@ -133,7 +133,7 @@ class x264Controller:
             digits = 6
             prefix = str( title_id ).rjust( digits, '0' )
             inputDir = QC.checkDirectory( os.path.join( self.x264.getInputDirectory(), prefix ) )
-            outputDir = QC.checkDirectory( os.path.join( self.x264.getOutputDirectory(), prefix ) )
+            outputDir = QC.checkDirectory( os.path.join( self.x264.getOutputDirectory(), prefix + '_' + filebody[:-1] ) )
 
             avsSource = os.path.join( self.x264.getInputDirectory(), avs )
             avsSourceBody, avsSourceExt = os.path.splitext( avsSource )

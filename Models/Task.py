@@ -23,6 +23,7 @@ class Task:
         self.__options['audioBitrate'] = opt['audioBitrate']
         self.__options['audioFrequencySample'] = opt['audioFrequencySample']
         self.__options['muxOutputFormat'] = opt['muxOutputFormat']
+        self.__options['leonardoUse'] = opt['leonardoUse']
 
         self.__options['avsFiles'] = QC.loadFiles( self.__options['inputDirectory'],
                                                  'avs' )
