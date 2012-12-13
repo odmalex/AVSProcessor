@@ -35,7 +35,8 @@ class Bootstrap:
     def loadConf( self ):
         # loading configuration
         try:
-            Configuration.load( Configuration.configurationFile )
+            Configuration.all = Configuration.load( 'conf\\avs.ini' )
+            Configuration.db_conn = Configuration.load( 'conf\\db.ini' )
         except:
             publisher.sendMessage( 'LOG', 'c1' )
             exit()

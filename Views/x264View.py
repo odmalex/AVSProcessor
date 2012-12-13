@@ -89,8 +89,8 @@ class x264View( wx.Panel ):
         self.static_line_3 = wx.StaticLine( self, -1 )
         self.static_line_4 = wx.StaticLine( self, -1 )
 
-        self.useLeonardoCheckBox = wx.CheckBox( self, -1, "Use Leonardo naming scheme" )
-        self.leonardoSettingsButton = wx.Button( self, -1, "Settings" )
+#        self.useLeonardoCheckBox = wx.CheckBox( self, -1, "Use Leonardo naming scheme" )
+        self.leonardoSettingsButton = wx.Button( self, -1, "Leonardo naming settings" )
 
         self.__set_properties()
         self.__do_layout()
@@ -178,6 +178,8 @@ class x264View( wx.Panel ):
                                 wx.ALIGN_CENTER_VERTICAL, 5 )
         chooseProfileSizer.Add( self.chooseProfileComboBox, 0, wx.ALL |
                                 wx.ALIGN_CENTER_VERTICAL, 5 )
+        chooseProfileSizer.Add( self.leonardoSettingsButton, 0, wx.LEFT |
+                                wx.ALIGN_CENTER_VERTICAL, 50 )
         profileSubSizer.Add( chooseProfileSizer, 1, 0, 0 )
         profileSizer.Add( profileSubSizer, 1, wx.EXPAND, 0 )
         x264Sizer.Add( profileSizer, 1, wx.ALL | wx.EXPAND, 10 )
@@ -238,14 +240,13 @@ class x264View( wx.Panel ):
         buttonsSizer.Add( self.previewTaskButton, 0, 0, 0 )
         buttonsSizer.Add( self.runAllButton, 0, wx.LEFT, 350 )
 
-        leonardoSizer.Add( self.useLeonardoCheckBox, wx.ALL |
-                                  wx.ALIGN_CENTER_VERTICAL, 5 )
+        #leonardoSizer.Add( self.useLeonardoCheckBox, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5 )
         leonardoSizer.Add( self.leonardoSettingsButton, 0, wx.LEFT, 20 )
 
 #        queueListSizer()
         mainSizer.Add( x264Sizer, 1, wx.ALL | wx.EXPAND, 10 )
-        mainSizer.Add( self.static_line_3, 0, wx.EXPAND, 0 )
-        mainSizer.Add( leonardoSizer, 1, wx.ALL, 10 )
+       # mainSizer.Add( self.static_line_3, 0, wx.EXPAND, 0 )
+        #mainSizer.Add( leonardoSizer, 1, wx.ALL, 10 )
 
         mainSizer.Add( self.static_line_4, 0, wx.EXPAND, 0 )
         mainSizer.Add( buttonsSizer, 1, wx.ALL | wx.EXPAND, 10 )

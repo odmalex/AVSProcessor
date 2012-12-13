@@ -22,7 +22,4 @@ class LeonardoSettingsModel:
         return [languages, variants, owners, aspectRatios, copyrights]
 
 
-    def getKeyByValue( self, dict, searchValue ):
-        for key, value in dict.iteritems():
-            if searchValue == value:
-                return key
+

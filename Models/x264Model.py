@@ -1,9 +1,11 @@
 from Models.Task import Task
+from Models.DB import DB
 
 class x264Model:
 
     def __init__( self ):
         self.__taskQueue = []
+        self.db = DB()
 
     def addTask( self, id, options ):
         task = Task()
@@ -30,3 +32,18 @@ class x264Model:
     def getTaskQueue( self ):
         return self.__taskQueue
 
+    def getNewTitleId( self ):
+        curr_id = self.db.getMaxTableId( 'title' )
+        if curr_id:
+            return self.db.getMaxTableId( 'title' ) + 1
+        else:
+            return 1
+
+    def insertTitle( self, args ):
+        self.db.insertTable( 'title', args )
+
+    def insertTitleAssets( self, args ):
+        self.db.insertTable( 'title_assets', args )
+
+    def updateTitle( self, id, field, value ):
+        self.db.updateTable( 'title', id, field, value )

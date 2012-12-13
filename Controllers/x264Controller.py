@@ -1,11 +1,14 @@
 import wx
 import os
+import socket
 from Views.x264View import x264View
 from Models.x264Model import x264Model
 from Models.Configuration import Configuration
 from Models.QC import QC
+from Models.DB import DB
 from PreviewController import PreviewController
 from RunController import RunController
+from LeonardoSettingsController import LeonardoSettingsController
 from pubsub import  pub
 publisher = pub.Publisher()
 
@@ -14,6 +17,9 @@ class x264Controller:
         self.x264 = panel
         self.x264Model = x264Model()
         self.loadOptions()
+
+        self.generalId = 0
+        self.avsFiles = []
 
         publisher.subscribe( self.updateQueueProcessingDirectory,
                        'QUEUE_PROCESSING_DIRECTORY' )
@@ -24,6 +30,8 @@ class x264Controller:
         publisher.subscribe( self.updateQueueProcessingStatuses,
                        'QUEUE_PROCESSING_STATUSES' )
         publisher.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
+
+        self.x264.leonardoSettingsButton.Disable()
 
     def processingFinish( self, message ):
         self.enableButtons()
@@ -106,23 +114,99 @@ class x264Controller:
                         self.x264.previewTaskButton )
         self.x264.Bind( wx.EVT_BUTTON, self.eventRunAll,
                         self.x264.runAllButton )
+        self.x264.Bind( wx.EVT_BUTTON, self.eventLeonardoSettings,
+                        self.x264.leonardoSettingsButton )
+
+    def leonardoCase( self ):
+        multi_profile_sizes = Configuration.get( 'multi_profile', 'sizes' )
+        leonardo = Configuration.all['leonardo']
+
+        filebody = ''
+        filebody += leonardo['language'] + '_'
+        filebody += leonardo['variant'] + '_'
+        filebody += leonardo['owner'] + '_'
+        filebody += leonardo['copyright'] + '_'
+        filebody += leonardo['aspect_ratio'] + '_'
+
+        for avs in self.avsFiles:
+            title_id = self.x264Model.getNewTitleId()
+            digits = 6
+            prefix = str( title_id ).rjust( digits, '0' )
+            inputDir = QC.checkDirectory( os.path.join( self.x264.getInputDirectory(), prefix ) )
+            outputDir = QC.checkDirectory( os.path.join( self.x264.getOutputDirectory(), prefix ) )
+
+            avsSource = os.path.join( self.x264.getInputDirectory(), avs )
+            avsSourceBody, avsSourceExt = os.path.splitext( avsSource )
+            if QC.regex( avs, '_43_' ):
+                sizes = multi_profile_sizes['_43_']
+            elif QC.regex( avs, '_169_' ):
+                sizes = multi_profile_sizes['_169_']
+            else:
+                print 'Aspect ratio not found in the avs filename. Exiting\n'
+                exit()
+
+
+            ## inserting a row in the title table
+            args = ( title_id, prefix, avs, )
+            args += ( QC.getKeyByValue( leonardo['language_list'], leonardo['language'] ), )
+            args += ( QC.getKeyByValue( leonardo['variant_list'], leonardo['variant'] ), )
+            args += ( QC.getKeyByValue( leonardo['owner_list'], leonardo['owner'] ), )
+            args += ( QC.getKeyByValue( leonardo['copyright_list'], leonardo['copyright'] ), )
+            args += ( QC.getKeyByValue( leonardo['aspect_ratio_list'], leonardo['aspect_ratio'] ), )
+            args += ( inputDir, outputDir, )
+            args += ( Configuration.all['videoSettings']['twoPass'], )
+            args += ( Configuration.all['audioSettings']['frequencySample'], )
+            args += ( socket.gethostbyname( socket.gethostname() ), ) ## get the local ip
+            args += ( None, None, 'Pending' )
+
+            self.x264Model.insertTitle( args ) ## insert a new title entry reserving its unique id 
+
+            for key in sizes.keys():
+                filename = os.path.join( inputDir, prefix + '_' + filebody + key + '.avs' )
+                f = open( filename, 'w' )
+                f.write( 'AVISource("' + avsSource + '",audio=true)\n' )
+                f.write( 'bicubicresize(' + sizes[key][0] + ', ' + sizes[key][1] + ')' )
+
+                outputFile = os.path.basename( filename )[:-3]
+                outputFile += Configuration.all['muxSettings']['outputFormat']
+                args = ( title_id, outputFile, )
+                args += ( int( key ), int( sizes[key][0] ), int( sizes[key][1] ), )
+
+                self.x264Model.insertTitleAssets( args )
+
+            columns = []
+            columns.append( inputDir )
+            columns.append( self.x264.getProfile() )
+            columns.append( "" )
+            columns.append( "Added" )
+            id = self.addListItem( columns )
+            opt = self.getTaskOptions()
+            opt['inputDirectory'] = inputDir
+            opt['outputDirectory'] = outputDir
+            self.x264Model.addTask( id, opt )
+            publisher.sendMessage( 'LOG', 'i6' )
+            self.generalId += 1
+
 
     def eventAddTask( self, event ):
         if self.checkIntegrity():
-            input, profile = self.checkOutputDirectory()
-            if input:
+            output, profile = self.checkOutputDirectory()
+            if output:
                 wx.MessageBox( 'You have already assigned this output directory to "%s" with \
 profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
                                    wx.OK )
             else:
-                columns = []
-                columns.append( self.x264.getInputDirectory() )
-                columns.append( self.x264.getProfile() )
-                columns.append( "" )
-                columns.append( "Added" )
-                id = self.addListItem( columns )
-                self.x264Model.addTask( id, self.getTaskOptions() )
-                publisher.sendMessage( 'LOG', 'i6' )
+                if Configuration.all['leonardo']['use']: ################# case of Leonardo naming scheme ################
+                    self.leonardoCase()
+                else:
+                    columns = []
+                    columns.append( self.x264.getInputDirectory() )
+                    columns.append( self.x264.getProfile() )
+                    columns.append( "" )
+                    columns.append( "Added" )
+                    id = self.addListItem( columns )
+                    self.x264Model.addTask( id, self.getTaskOptions() )
+                    publisher.sendMessage( 'LOG', 'i6' )
 
     def eventRemoveTask( self, event ):
         item = self.x264.getQueueList().GetFocusedItem()
@@ -187,10 +271,27 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
         with open( profile, 'r' ) as f:
             data = f.read()
         lines = data.split( '\n' )
-        Configuration.set( lines[0], 'videoSettings', 'cmdOptions' )
-        Configuration.set( lines[1], 'audioSettings', 'bitrate' )
-        self.x264.setVideoCmdOptions( lines[0] )
-        self.x264.setAudioBitrate( lines[1] )
+
+        if self.x264.getProfile() == 'Leonardo-Multiprofile.Prfl':
+            self.x264.leonardoSettingsButton.Enable()
+            self.x264.videoCmdOptionsStaticText.Disable()
+            self.x264.videoCmdOptionsTextCtrl.Disable()
+            self.x264.audioBitrateStaticText.Disable()
+            self.x264.audioBitrateTextCtrl.Disable()
+            Configuration.set( True, 'leonardo', 'use' )
+            Configuration.set( lines[0:4], 'multi_profile', 'arguments' )
+            Configuration.set( lines[4], 'multi_profile', 'bitrate' )
+        else:
+            self.x264.leonardoSettingsButton.Disable()
+            Configuration.set( False, 'leonardo', 'use' )
+            self.x264.videoCmdOptionsStaticText.Enable()
+            self.x264.videoCmdOptionsTextCtrl.Enable()
+            self.x264.audioBitrateStaticText.Enable()
+            self.x264.audioBitrateTextCtrl.Enable()
+            Configuration.set( lines[0], 'videoSettings', 'cmdOptions' )
+            Configuration.set( lines[1], 'audioSettings', 'bitrate' )
+            self.x264.setVideoCmdOptions( lines[0] )
+            self.x264.setAudioBitrate( lines[1] )
 
     def eventVideoOutputFormat( self, event ):
         Configuration.set( self.x264.getVideoOutputFormat(), 'videoSettings',
@@ -224,6 +325,19 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
         Configuration.set( self.x264.getAudioFrequencySample(), 'audioSettings',
                            'frequencySample' )
 
+    def eventLeonardoSettings( self, event ):
+        if not self.x264.leonardo_settings:
+            LeonardoSettingsController( self.x264 )
+            self.x264.leonardo_settings = True
+
+    def eventUseLeonardo( self, event ):
+        if self.x264.getUseLeonardo():
+            self.x264.leonardoSettingsButton.Enable()
+            Configuration.set( True, 'leonardo', 'use' )
+        else:
+            self.x264.leonardoSettingsButton.Disable()
+            Configuration.set( False, 'leonardo', 'use' )
+
     def checkProfileDir( self ):
         profiles = QC.loadFiles( self.x264.getProfileDirectory(), 'prfl' )
         self.x264.setProfilesList( sorted( profiles ) )
@@ -232,10 +346,10 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
         if not self.x264.getInputDirectory():
             wx.MessageBox( 'No input directory is chosen!', 'Warning', wx.OK )
             return False
-        avsFiles = QC.loadFiles( self.x264.getInputDirectory(), 'avs' )
+        self.avsFiles = QC.loadFiles( self.x264.getInputDirectory(), 'avs' )
         if not self.x264.getOutputDirectory():
             wx.MessageBox( 'No output directory is chosen!', 'Warning', wx.OK )
-        elif not avsFiles:
+        elif not self.avsFiles:
             wx.MessageBox( 'There are no AVS files in input directory!', 'Warning', wx.OK )
         elif not self.x264.getProfile():
             wx.MessageBox( 'No profile is chosen!', 'Warning', wx.OK )
@@ -251,7 +365,6 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
             return True
         return False
 
-
     def getTaskOptions( self ):
         opt = {}
         opt['inputDirectory'] = self.x264.getInputDirectory()
@@ -266,6 +379,8 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
         opt['audioBitrate'] = self.x264.getAudioBitrate()
         opt['audioFrequencySample'] = self.x264.getAudioFrequencySample()
         opt['muxOutputFormat'] = self.x264.getMuxOutputFormat()
+        opt['leonardoUse'] = Configuration.get( 'leonardo', 'use' )
+        opt['multi_profile'] = Configuration.get( 'multi_profile' )
 
         return opt
 

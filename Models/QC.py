@@ -62,3 +62,9 @@ class QC:
             l.append( i )
             i = s.find( sub, i + 1 )
         return l
+
+    @staticmethod
+    def getKeyByValue( dict, searchValue ):
+        for key, value in dict.iteritems():
+            if searchValue == value:
+                return key

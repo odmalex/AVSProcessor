@@ -1,4 +1,5 @@
 
+from Models.DB import DB
 from Commands import Commands
 from Configuration import Configuration
 from pubsub import  pub
@@ -6,11 +7,13 @@ from threading import Thread
 from subprocess import Popen, PIPE, STDOUT
 from pprint import pprint
 from Subprocess import Subprocess
+import datetime
 publisher = pub.Publisher()
 
 class RunModel:
     def __init__( self, taskQueue ):
         self.taskQueue = taskQueue
+        self.db = DB()
 
     def setCommands( self, commands ):
         self.__commands = commands
@@ -39,6 +42,10 @@ class RunModel:
         avsFiles = task.getOptions()['avsFiles']
         totalFiles = task.getOptions()['filesNumber']
 
+        prefix = self.inputDirectory.split( '\\' )[-1]
+        id = int( prefix )
+
+        self.db.updateTable( 'title', id, 'start_timestamp', datetime.datetime.now() )
         i = 0
         for avs in avsFiles:
             self.com = Commands( task )
@@ -51,6 +58,8 @@ class RunModel:
             c.join()
             i += 1
         self.avsFileLogging( 'finished', i, totalFiles )
+        self.db.updateTable( 'title', id, 'end_timestamp', datetime.datetime.now() )
+        self.db.updateTable( 'title', id, 'status', 'Completed' )
 
     def runCommands( self ):
         self.commandLogging( 'init' )

@@ -1,4 +1,5 @@
 from Configuration import Configuration
+from QC import QC
 import os
 from pprint import pprint
 
@@ -14,16 +15,32 @@ class Commands:
         self.inputDirectory = self.task.getOptions()[ 'inputDirectory']
         self.outputDirectory = self.task.getOptions()[ 'outputDirectory']
         self.videoOutputFormat = self.task.getOptions()[ 'videoOutputFormat']
-        self.videoCmdOptions = self.task.getOptions()[ 'videoCmdOptions']
         self.audioOutputFormat = self.task.getOptions()[ 'audioOutputFormat']
-        self.audioBitrate = self.task.getOptions()[ 'audioBitrate']
         self.audioFrequencySample = self.task.getOptions()['audioFrequencySample']
         self.muxOutputFormat = self.task.getOptions()[ 'muxOutputFormat']
         self.hostDirectory = Configuration.all[ 'directories'][ 'host' ]
         self.applications = Configuration.all[ 'applications' ]
+        self.leonardoUse = Configuration.all[ 'leonardo' ]['use']
+        self.videoCmdOptions = self.task.getOptions()[ 'videoCmdOptions']
+        self.audioBitrate = self.task.getOptions()[ 'audioBitrate']
+        self.multiProfile = {
+                "250":Configuration.all[ 'multi_profile' ]['arguments'][0],
+                "500":Configuration.all[ 'multi_profile' ]['arguments'][1],
+                "800":Configuration.all[ 'multi_profile' ]['arguments'][2],
+                "1500":Configuration.all[ 'multi_profile' ]['arguments'][3]
+                }
+        self.multiBitrate = Configuration.all[ 'multi_profile' ]['bitrate']
+
 
     def getCommands( self, inputFile ):
         self.getConf()
+
+        if self.leonardoUse:
+            for key in self.multiProfile.keys():
+                if QC.regex( inputFile, '_' + key ):
+                    self.videoCmdOptions = self.multiProfile[key]
+                    self.audioBitrate = self.multiBitrate
+
         filename, extension = os.path.splitext( inputFile )
         self.input_avs = os.path.join( self.inputDirectory, inputFile )
 
@@ -35,16 +52,6 @@ class Commands:
                                      os.path.basename( filename ) ) + \
                                      '.audio.' + self.audioOutputFormat
 
-        ###########################################
-        leonardo = Configuration.all['leonardo']
-        if leonardo['use']:
-            fileName = ''
-            fileName += leonardo['language'] + '_'
-            fileName += leonardo['variant'] + '_'
-            fileName += leonardo['owner'] + '_'
-            fileName += leonardo['copyright'] + '_'
-            fileName += leonardo['aspect_ratio']
-        ###########################################
 
         self.output_mux = os.path.join( self.outputDirectory,
                                    os.path.basename( filename ) ) + \
