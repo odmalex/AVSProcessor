@@ -10,6 +10,11 @@ class DB:
         Configuration.db_conn = Configuration.load( 'conf\\db.ini' )
         self.connect()
 
+    def __del__( self ):
+        try:
+            self.connection.close()
+        except:
+            pass
 
     def connect( self ):
         try:

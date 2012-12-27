@@ -42,10 +42,11 @@ class RunModel:
         avsFiles = task.getOptions()['avsFiles']
         totalFiles = task.getOptions()['filesNumber']
 
-        prefix = self.inputDirectory.split( '\\' )[-1]
-        id = int( prefix )
+        if task.getOptions()['leonardoUse']:
+            prefix = self.inputDirectory.split( '\\' )[-1]
+            id = int( prefix )
+            self.db.updateTable( 'title', id, 'start_timestamp', datetime.datetime.now() )
 
-        self.db.updateTable( 'title', id, 'start_timestamp', datetime.datetime.now() )
         i = 0
         for avs in avsFiles:
             self.com = Commands( task )
@@ -58,8 +59,10 @@ class RunModel:
             c.join()
             i += 1
         self.avsFileLogging( 'finished', i, totalFiles )
-        self.db.updateTable( 'title', id, 'end_timestamp', datetime.datetime.now() )
-        self.db.updateTable( 'title', id, 'status', 'Completed' )
+
+        if task.getOptions()['leonardoUse']:
+            self.db.updateTable( 'title', id, 'end_timestamp', datetime.datetime.now() )
+            self.db.updateTable( 'title', id, 'status', 'Completed' )
 
     def runCommands( self ):
         self.commandLogging( 'init' )

@@ -2,8 +2,8 @@
 import json
 
 class Configuration:
-    configurationFile = '..\\conf\\avs.ini'
-    databaseFile = '..\\conf\\db.ini'
+    configurationFile = 'conf\\avs.ini'
+    databaseFile = 'conf\\db.ini'
     all = {}
     db_conn = {}
 
@@ -16,7 +16,6 @@ class Configuration:
             return json.JSONDecoder().decode( content )
         except:
             print 'Error in loading file: "' + inputFile + '". Exiting...'
-            #self.logger_core.critical( "Error in loading configuration. Exiting..." )
             exit()
 
     @staticmethod
@@ -27,8 +26,8 @@ class Configuration:
             f.write( s + "\n" )
             f.close()
         except:
-            #self.logger_core.critical( "Error while saving configuration. Configuration was not saved." )
-            pass
+            print 'Error in saving file: "' + inputFile + '". Exiting...'
+            exit()
 
     @staticmethod
     def set( value, *kwds ):
