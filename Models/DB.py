@@ -31,8 +31,8 @@ class DB:
 
     def getMaxTableId( self, table ):
         try:
-            line = self.cursor.execute( 'select max(id) from ' + table )
-            return self.cursor.fetchone()[0]
+            line = self.cursor.execute( "SHOW TABLE STATUS LIKE '" + table + "'" )
+            return self.cursor.fetchone()[10] - 1
         except:
             print 'Error in fetching max id of table ' + table + '. Exiting...'
             exit()
@@ -58,15 +58,21 @@ class DB:
     def insertTable( self, table, args ):
         sql = 'insert into ' + table + '('
         columns, auto = self.getTableColumns( table )
+
         if auto:
             sql += ",".join( columns[1:] )
+            length = len( columns[1:] )
+            arguments = args[1:]
         else:
             sql += ",".join( columns )
+            length = len( columns )
+            arguments = args
         sql += ') values ('
-        values = ( "%s, " * ( len( args ) ) )
+        values = ( "%s, " * length )
         sql += values[:-2] + ')'
+
         try:
-            self.cursor.execute( sql, args )
+            self.cursor.execute( sql, arguments )
             self.connection.commit()
         except:
             print 'Error while inserting in table ' + table + '. Exiting...'

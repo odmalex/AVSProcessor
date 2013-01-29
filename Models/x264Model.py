@@ -39,6 +39,13 @@ class x264Model:
         else:
             return 1
 
+    def getNewTitleAssetsId( self ):
+        curr_id = self.db.getMaxTableId( 'title_assets' )
+        if curr_id:
+            return self.db.getMaxTableId( 'title_assets' ) + 1
+        else:
+            return 1
+
     def insertTitle( self, args ):
         self.db.insertTable( 'title', args )
 

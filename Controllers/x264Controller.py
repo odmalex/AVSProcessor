@@ -169,9 +169,10 @@ class x264Controller:
 
                 outputFile = os.path.basename( filename )[:-3]
                 outputFile += Configuration.all['muxSettings']['outputFormat']
-                args = ( title_id, outputFile, )
+                new_id = self.x264Model.getNewTitleAssetsId()
+                args = ( new_id, )
+                args += ( title_id, outputFile, )
                 args += ( int( key ), int( sizes[key][0] ), int( sizes[key][1] ), )
-
                 self.x264Model.insertTitleAssets( args )
 
             columns = []
