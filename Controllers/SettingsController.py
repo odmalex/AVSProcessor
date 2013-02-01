@@ -18,7 +18,10 @@ class SettingsController:
         publisher.subscribe( self.exiting, 'EXITING' )
 
     def exiting( self, message ):
-        self.settingsView.Destroy()
+        try:
+            self.settingsView.Destroy()
+        except:
+            pass
 
     def setEvents( self ):
         self.settingsView.Bind( wx.EVT_TOOL, self.eventSave, id = 1 )
@@ -41,6 +44,24 @@ class SettingsController:
         try:
             Configuration.save( Configuration.configurationFile )
             self.settingsView.settingsStatusbar.SetStatusText( "Configuration was saved" )
+
+            self.HOST_DIR = Configuration.get( 'directories', 'host' )
+            if not QC.checkDirectory( self.HOST_DIR ):
+                self.HOST_DIR = "."
+                publisher.sendMessage( 'LOG', 'e1' )
+
+            # checking applications and libraries
+            for app in Configuration.get( 'applications' ):
+                appFile = Configuration.get( 'applications', app )
+                if not QC.checkFile( appFile, self.HOST_DIR ):
+                    publisher.sendMessage( 'LOG', 'c2' )
+                    exit()
+
+            for lib in Configuration.get( 'libraries' ):
+                libFile = Configuration.get( 'libraries', lib )
+                if not QC.checkFile( libFile, self.HOST_DIR ):
+                    publisher.sendMessage( 'LOG', 'c3' )
+                    exit()
         except:
             wx.MessageBox( 'Error in saving configuration!', 'Warning', wx.OK )
 #            self.core.logger_core.warning( "Error in saving configuration" )

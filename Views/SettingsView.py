@@ -10,7 +10,7 @@ class SettingsView( wx.Frame ):
         # Tool Bar
         self.settingsTollbar = wx.ToolBar( self, -1 )
         self.SetToolBar( self.settingsTollbar )
-        self.settingsTollbar.AddLabelTool( 1, "Save", wx.Bitmap( "C:\\EclipseWorkspaces\\csse120\\AVS Processor\\images\\save.png", wx.BITMAP_TYPE_ANY ), wx.NullBitmap, wx.ITEM_NORMAL, "Save", "Click to save configuration" )
+        self.settingsTollbar.AddLabelTool( 1, "Save", wx.Bitmap( ".\\images\\save.png", wx.BITMAP_TYPE_ANY ), wx.NullBitmap, wx.ITEM_NORMAL, "Save", "Click to save configuration" )
         # Tool Bar end
         self.hostDirectoryStaticText = wx.StaticText( self, -1, "Host    " )
         self.hostDirectoryTextCtrl = wx.TextCtrl( self, -1, "" )

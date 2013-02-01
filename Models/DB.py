@@ -6,6 +6,7 @@ from Configuration import Configuration
 class DB:
 
     def __init__( self ):
+        self.passwd = '|:33w|:r3U'
         #Configuration.all = Configuration.load( '..\\conf\\avs.ini' )
         Configuration.db_conn = Configuration.load( 'conf\\db.ini' )
         self.connect()
@@ -21,13 +22,19 @@ class DB:
             self.connection = MySQLdb.connect ( 
                 host = Configuration.db_conn['connection']['host'],
                 user = Configuration.db_conn['connection']['user'],
-                passwd = Configuration.db_conn['connection']['passwd'],
+                passwd = self.decrypt( Configuration.db_conn['connection']['passwd'] ),
                 db = Configuration.db_conn['connection']['db']
             )
             self.cursor = self.connection.cursor()
         except:
             print 'Error in connecting database. Exiting...'
             exit()
+
+    def decrypt( self, encrypted ):
+        final = ""
+        for p in encrypted:
+            final += chr( ord( p ) - 3 )
+        return final[::-1]
 
     def getMaxTableId( self, table ):
         try:
