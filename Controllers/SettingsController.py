@@ -15,7 +15,7 @@ class SettingsController:
 
         self.settingsView.setHostDirectory( self.hostDirectory )
         self.setEvents()
-        publisher.subscribe( self.exiting, 'EXITING' )
+        pub.subscribe( self.exiting, 'EXITING' )
 
     def exiting( self, message ):
         try:
@@ -48,19 +48,19 @@ class SettingsController:
             self.HOST_DIR = Configuration.get( 'directories', 'host' )
             if not QC.checkDirectory( self.HOST_DIR ):
                 self.HOST_DIR = "."
-                publisher.sendMessage( 'LOG', 'e1' )
+                pub.sendMessage( 'LOG', arg1='e1' )
 
             # checking applications and libraries
             for app in Configuration.get( 'applications' ):
                 appFile = Configuration.get( 'applications', app )
                 if not QC.checkFile( appFile, self.HOST_DIR ):
-                    publisher.sendMessage( 'LOG', 'c2' )
+                    pub.sendMessage( 'LOG', arg1='c2' )
                     exit()
 
             for lib in Configuration.get( 'libraries' ):
                 libFile = Configuration.get( 'libraries', lib )
                 if not QC.checkFile( libFile, self.HOST_DIR ):
-                    publisher.sendMessage( 'LOG', 'c3' )
+                    pub.sendMessage( 'LOG', arg1='c3' )
                     exit()
         except:
             wx.MessageBox( 'Error in saving configuration!', 'Warning', wx.OK )

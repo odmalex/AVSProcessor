@@ -43,28 +43,28 @@ class LogListener:
                                  os.path.join( self.logDir, 'mux.log' ),
                                  self.formatting )
 
-        publisher.subscribe( self.logCore, 'LOG' )
-        publisher.subscribe( self.logVideo, 'LOG_VIDEO' )
-        publisher.subscribe( self.logAudio, 'LOG_AUDIO' )
-        publisher.subscribe( self.logMux, 'LOG_MUX' )
+        pub.subscribe( self.logCore, 'LOG' )
+        pub.subscribe( self.logVideo, 'LOG_VIDEO' )
+        pub.subscribe( self.logAudio, 'LOG_AUDIO' )
+        pub.subscribe( self.logMux, 'LOG_MUX' )
 
-    def logCore( self, message ):
-        msg = self.log_map[message.data]
-        if message.data[0] == 'i':
+    def logCore( self, arg1 ):
+        msg = self.log_map[arg1]
+        if arg1[0] == 'i':
             type = 'INFO'
-        elif message.data[0] == 'e':
+        elif arg1[0] == 'e':
             type = 'ERROR'
-        elif message.data[0] == 'c':
+        elif arg1[0] == 'c':
             type = 'CRITICAL'
         self.coreLogger.trace( type, msg )
 
-    def logVideo( self, message ):
-        self.videoLogger.trace( 'INFO', message.data )
+    def logVideo( self, arg1 ):
+        self.videoLogger.trace( 'INFO', arg1 )
 
-    def logAudio( self, message ):
-        self.audioLogger.trace( 'INFO', message.data )
+    def logAudio( self, arg1 ):
+        self.audioLogger.trace( 'INFO', arg1 )
 
-    def logMux( self, message ):
-        self.muxLogger.trace( 'INFO', message.data )
+    def logMux( self, arg1 ):
+        self.muxLogger.trace( 'INFO', arg1 )
 
 

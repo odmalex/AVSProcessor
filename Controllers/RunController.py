@@ -25,21 +25,21 @@ class RunController:
         self.runView.Destroy()
 
     def setSubscriber( self ):
-        publisher.subscribe( self.updateProcessingFile, 'PROCESSING_FILE' )
-        publisher.subscribe( self.updateVideoGauge, 'VIDEO_GAUGE' )
-        publisher.subscribe( self.updateVideoLabel, 'VIDEO_LABEL' )
-        publisher.subscribe( self.updateVideoOutput, 'VIDEO_OUTPUT' )
-        publisher.subscribe( self.updateAudioGauge, 'AUDIO_GAUGE' )
-        publisher.subscribe( self.updateAudioLabel, 'AUDIO_LABEL' )
-        publisher.subscribe( self.updateAudioOutput, 'AUDIO_OUTPUT' )
-        publisher.subscribe( self.updateMuxGauge, 'MUX_GAUGE' )
-        publisher.subscribe( self.updateMuxLabel, 'MUX_LABEL' )
-        publisher.subscribe( self.updateMuxOutput, 'MUX_OUTPUT' )
-        publisher.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
-        publisher.subscribe( self.exiting, 'EXITING' )
+        pub.subscribe( self.updateProcessingFile, 'PROCESSING_FILE' )
+        pub.subscribe( self.updateVideoGauge, 'VIDEO_GAUGE' )
+        pub.subscribe( self.updateVideoLabel, 'VIDEO_LABEL' )
+        pub.subscribe( self.updateVideoOutput, 'VIDEO_OUTPUT' )
+        pub.subscribe( self.updateAudioGauge, 'AUDIO_GAUGE' )
+        pub.subscribe( self.updateAudioLabel, 'AUDIO_LABEL' )
+        pub.subscribe( self.updateAudioOutput, 'AUDIO_OUTPUT' )
+        pub.subscribe( self.updateMuxGauge, 'MUX_GAUGE' )
+        pub.subscribe( self.updateMuxLabel, 'MUX_LABEL' )
+        pub.subscribe( self.updateMuxOutput, 'MUX_OUTPUT' )
+        pub.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
+        pub.subscribe( self.exiting, 'EXITING' )
 
     def runAll( self ):
-        publisher.sendMessage( 'QUEUE_PROCESSING_STATUSES', 'Pending' )
+        pub.sendMessage( 'QUEUE_PROCESSING_STATUSES', arg1='Pending' )
         for task in self.taskQueue:
             if not task.getStatus() == 'Completed':
                 task.setStatus( 'Pending' )
@@ -49,36 +49,36 @@ class RunController:
         self.runView.Destroy()
 
 
-    def updateProcessingFile( self, message ):
-        self.runView.setProcessingFileText( message.data )
+    def updateProcessingFile( self, arg1 ):
+        self.runView.setProcessingFileText( arg1 )
 
-    def updateVideoGauge( self, message ):
-        self.runView.videoExtractGauge.SetValue( message.data )
+    def updateVideoGauge( self, arg1 ):
+        self.runView.videoExtractGauge.SetValue( arg1 )
 
-    def updateVideoLabel( self, message ):
-        self.runView.videoExtractStaticText.SetLabel( message.data )
+    def updateVideoLabel( self, arg1 ):
+        self.runView.videoExtractStaticText.SetLabel( arg1 )
 
-    def updateVideoOutput( self, message ):
-        self.runView.videoDetailsTextCtrl.AppendText( message.data )
+    def updateVideoOutput( self, arg1 ):
+        self.runView.videoDetailsTextCtrl.AppendText( arg1 )
         self.runView.videoDetailsTextCtrl.SetStyle( -1, -1, wx.TextAttr( "white" ) )
 
-    def updateAudioGauge( self, message ):
-        self.runView.audioExtractGauge.SetValue( message.data )
+    def updateAudioGauge( self, arg1 ):
+        self.runView.audioExtractGauge.SetValue( arg1 )
 
-    def updateAudioLabel( self, message ):
-        self.runView.audioExtractStaticText.SetLabel( message.data )
+    def updateAudioLabel( self, arg1 ):
+        self.runView.audioExtractStaticText.SetLabel( arg1 )
 
-    def updateAudioOutput( self, message ):
-        self.runView.audioDetailsTextCtrl.AppendText( message.data )
+    def updateAudioOutput( self, arg1 ):
+        self.runView.audioDetailsTextCtrl.AppendText( arg1 )
         self.runView.audioDetailsTextCtrl.SetStyle( -1, -1, wx.TextAttr( "white" ) )
 
-    def updateMuxGauge( self, message ):
-        self.runView.muxGauge.SetValue( message.data )
+    def updateMuxGauge( self, arg1 ):
+        self.runView.muxGauge.SetValue( arg1 )
 
-    def updateMuxLabel( self, message ):
-        self.runView.muxStaticText.SetLabel( message.data )
+    def updateMuxLabel( self, arg1 ):
+        self.runView.muxStaticText.SetLabel( arg1 )
 
-    def updateMuxOutput( self, message ):
-        self.runView.muxDetailsTextCtrl.AppendText( message.data )
+    def updateMuxOutput( self, arg1 ):
+        self.runView.muxDetailsTextCtrl.AppendText( arg1 )
         self.runView.muxDetailsTextCtrl.SetStyle( -1, -1, wx.TextAttr( "white" ) )
 

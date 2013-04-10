@@ -48,7 +48,7 @@ class HostPromptController:
             self.hostPromptView.Destroy()
             Configuration.set( host, 'directories', 'host' )
             Configuration.save( Configuration.configurationFile )
-            publisher.sendMessage( 'HOST_PROMPT_OK' )
-            publisher.sendMessage( 'LOG', 'i5' )
+            pub.sendMessage( 'HOST_PROMPT_OK' )
+            pub.sendMessage( 'LOG', arg1='i5' )
 
 

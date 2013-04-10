@@ -16,7 +16,7 @@ class PreviewController:
         self.previewModel = PreviewModel( self.task )
         self.showCommands()
 
-        publisher.subscribe( self.exiting, 'EXITING' )
+        pub.subscribe( self.exiting, 'EXITING' )
 
     def exiting( self, message ):
         self.previewView.Destroy()

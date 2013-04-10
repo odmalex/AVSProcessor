@@ -48,8 +48,8 @@ class MainFrameController:
         if result == wx.ID_OK:
             self.mainFrame.Destroy()
             Configuration.save( Configuration.configurationFile )
-            publisher.sendMessage( 'LOG', 'i10' )
-            publisher.sendMessage( 'EXITING', '' )
+            pub.sendMessage( 'LOG', arg1='i10' )
+            pub.sendMessage( 'EXITING', message='' )
 
     def eventSettings( self, event ):
         self.settings = SettingsController()

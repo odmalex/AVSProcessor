@@ -9,7 +9,7 @@ from Models.DB import DB
 from PreviewController import PreviewController
 from RunController import RunController
 from LeonardoSettingsController import LeonardoSettingsController
-from pubsub import  pub
+from pubsub import pub
 publisher = pub.Publisher()
 
 class x264Controller:
@@ -17,39 +17,39 @@ class x264Controller:
         self.x264 = panel
         self.x264Model = x264Model()
         self.loadOptions()
-
+        self.currentProcessingOutputDirectory = None
         self.generalId = 0
         self.avsFiles = []
 
-        publisher.subscribe( self.updateQueueProcessingDirectory,
+        pub.subscribe( self.updateQueueProcessingDirectory,
                        'QUEUE_PROCESSING_DIRECTORY' )
-        publisher.subscribe( self.updateQueueProcessedFiles,
+        pub.subscribe( self.updateQueueProcessedFiles,
                              'QUEUE_PROCESSED_FILES' )
-        publisher.subscribe( self.updateQueueProcessingStatus,
+        pub.subscribe( self.updateQueueProcessingStatus,
                        'QUEUE_PROCESSING_STATUS' )
-        publisher.subscribe( self.updateQueueProcessingStatuses,
+        pub.subscribe( self.updateQueueProcessingStatuses,
                        'QUEUE_PROCESSING_STATUSES' )
-        publisher.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
+        pub.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
 
         self.x264.leonardoSettingsButton.Disable()
 
     def processingFinish( self, message ):
         self.enableButtons()
 
-    def updateQueueProcessingDirectory( self, message ):
-        self.currentProcessingOutputDirectory = message.data
+    def updateQueueProcessingDirectory( self, arg1 ):
+        self.currentProcessingOutputDirectory = arg1
 
-    def updateQueueProcessedFiles( self, message ):
-        self.updateColumns( 2, message.data )
+    def updateQueueProcessedFiles( self, arg1 ):
+        self.updateColumns( 2, arg1 )
 
-    def updateQueueProcessingStatus( self, message ):
-        self.updateColumns( 3, message.data )
+    def updateQueueProcessingStatus( self, arg1 ):
+        self.updateColumns( 3, arg1 )
 
-    def updateQueueProcessingStatuses( self, message ):
+    def updateQueueProcessingStatuses( self, arg1 ):
         cl = self.getColumnList( 3 )
         for i in range( len( cl ) ):
             if not cl[i] == 'Completed':
-                self.setListItem( i, 3, message.data )
+                self.setListItem( i, 3, arg1 )
 
     def updateColumns( self, column, data ):
         tasks = self.x264Model.getTaskQueue()
@@ -185,7 +185,7 @@ class x264Controller:
             opt['inputDirectory'] = inputDir
             opt['outputDirectory'] = outputDir
             self.x264Model.addTask( id, opt )
-            publisher.sendMessage( 'LOG', 'i6' )
+            pub.sendMessage( 'LOG', arg1='i6' )
             self.generalId += 1
 
 
@@ -207,14 +207,14 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
                     columns.append( "Added" )
                     id = self.addListItem( columns )
                     self.x264Model.addTask( id, self.getTaskOptions() )
-                    publisher.sendMessage( 'LOG', 'i6' )
+                    pub.sendMessage( 'LOG', arg1='i6' )
 
     def eventRemoveTask( self, event ):
         item = self.x264.getQueueList().GetFocusedItem()
         if item > -1:
             self.x264.getQueueList().DeleteItem( item )
             self.x264Model.removeTask( item )
-            publisher.sendMessage( 'LOG', 'i7' )
+            pub.sendMessage( 'LOG', arg1='i7' )
 
     def eventPreviewTask( self, event ):
         item = self.x264.getQueueList().GetFocusedItem()
@@ -226,7 +226,7 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
         self.disableButtons()
         taskQueue = self.x264Model.getTaskQueue()
         rc = RunController( taskQueue )
-        publisher.sendMessage( 'LOG', 'i8' )
+        pub.sendMessage( 'LOG', arg1='i8' )
 
     def eventInputDirectory( self, event ):
         dlg = wx.DirDialog( self.x264, "Choose an input directory",

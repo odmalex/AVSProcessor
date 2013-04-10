@@ -38,13 +38,13 @@ class RunModel:
 
     def processTask( self, task ):
         self.inputDirectory = task.getOptions()['inputDirectory']
-        self.videoTwoPass = task.getOptions()['videoTwoPass']
-        avsFiles = task.getOptions()['avsFiles']
-        totalFiles = task.getOptions()['filesNumber']
+        self.videoTwoPass   = task.getOptions()['videoTwoPass']
+        avsFiles            = task.getOptions()['avsFiles']
+        totalFiles          = task.getOptions()['filesNumber']
 
         if task.getOptions()['leonardoUse']:
             prefix = self.inputDirectory.split( '\\' )[-1]
-            id = int( prefix )
+            id     = int( prefix )
             self.db.updateTable( 'title', id, 'start_timestamp', datetime.datetime.now() )
 
         i = 0
@@ -133,73 +133,74 @@ class RunModel:
 
     def taskLogging( self, phase, task = None ):
         if phase == 'start':
-            publisher.sendMessage( "QUEUE_PROCESSING_DIRECTORY",
-                             task.getOptions()['outputDirectory'] )
-            publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'In Progress' )
+            pub.sendMessage( "QUEUE_PROCESSING_DIRECTORY",
+                             arg1=task.getOptions()['outputDirectory'] )
+            pub.sendMessage( "QUEUE_PROCESSING_STATUS", arg1='In Progress' )
             task.setStatus( 'In Progress' )
         elif phase == 'finish':
-            publisher.sendMessage( "QUEUE_PROCESSING_STATUS", 'Completed' )
+            pub.sendMessage( "QUEUE_PROCESSING_STATUS", arg1='Completed' )
             task.setStatus( 'Completed' )
         elif phase == 'finish_all':
-            publisher.sendMessage( "PROCESSING_FINISH", '' )
-            publisher.sendMessage( 'LOG', 'i9' )
+            pub.sendMessage( "PROCESSING_FINISH", message='' )
+            pub.sendMessage( 'LOG', arg1='i9' )
 
     def avsFileLogging( self, phase, *args ):
         if phase == 'processing':
-            publisher.sendMessage( "PROCESSING_FILE", 'Processing file: %s' %
+            pub.sendMessage( "PROCESSING_FILE", arg1='Processing file: %s' %
                                    args[0] )
-            publisher.sendMessage( "QUEUE_PROCESSED_FILES", '%d/%d' %
-                                                      ( args[1], args[2] ) )
+            sendData = '%d/%d' % ( args[1], args[2] )
+           
+            pub.sendMessage( "QUEUE_PROCESSED_FILES", arg1=sendData )
         elif phase == 'finished':
-            publisher.sendMessage( "QUEUE_PROCESSED_FILES", '%d/%d' %
-                                                      ( args[0], args[1] ) )
+            pub.sendMessage( "QUEUE_PROCESSED_FILES", arg1=('%d/%d' %
+                                                      ( args[0], args[1] )) )
 
     def commandLogging( self, phase, *args ):
         if phase == 'init':
-            publisher.sendMessage( "VIDEO_GAUGE", 0 )
-            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video...' )
-            publisher.sendMessage( "AUDIO_GAUGE", 0 )
-            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio...' )
-            publisher.sendMessage( "MUX_GAUGE", 0 )
-            publisher.sendMessage( "MUX_LABEL", 'Waiting for multiplexing...' )
+            pub.sendMessage( "VIDEO_GAUGE", arg1=0 )
+            pub.sendMessage( "VIDEO_LABEL", arg1='Extracting video...' )
+            pub.sendMessage( "AUDIO_GAUGE", arg1=0 )
+            pub.sendMessage( "AUDIO_LABEL", arg1='Extracting audio...' )
+            pub.sendMessage( "MUX_GAUGE", arg1=0 )
+            pub.sendMessage( "MUX_LABEL", arg1='Waiting for multiplexing...' )
         elif phase == 'video_start':
-            publisher.sendMessage( "VIDEO_GAUGE", 0 )
-            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... 0%' +
+            pub.sendMessage( "VIDEO_GAUGE", arg1=0 )
+            pub.sendMessage( "VIDEO_LABEL", arg1='Extracting video... 0%' +
                                    args[0] )
         elif phase == 'video_during':
-            publisher.sendMessage( 'LOG_VIDEO', args[0].strip( '\n' ) )
-            publisher.sendMessage( "VIDEO_OUTPUT", args[0] )
-            publisher.sendMessage( "VIDEO_GAUGE", args[1] )
-            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... %d%%' %
+            pub.sendMessage( 'LOG_VIDEO', arg1=args[0].strip( '\n' ) )
+            pub.sendMessage( "VIDEO_OUTPUT", arg1=args[0] )
+            pub.sendMessage( "VIDEO_GAUGE", arg1=args[1] )
+            pub.sendMessage( "VIDEO_LABEL", arg1='Extracting video... %d%%' %
                                    args[1] + args[2] )
         elif phase == 'video_finish':
-            publisher.sendMessage( "VIDEO_GAUGE", 100 )
-            publisher.sendMessage( "VIDEO_LABEL", 'Extracting video... 100%' +
+            pub.sendMessage( "VIDEO_GAUGE", arg1=100 )
+            pub.sendMessage( "VIDEO_LABEL", arg1='Extracting video... 100%' +
                                    args[0] )
         elif phase == 'audio_start':
-            publisher.sendMessage( "AUDIO_GAUGE", 0 )
-            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... 0%' )
+            pub.sendMessage( "AUDIO_GAUGE", arg1=0 )
+            pub.sendMessage( "AUDIO_LABEL", arg1='Extracting audio... 0%' )
         elif phase == 'audio_during':
-            publisher.sendMessage( 'LOG_AUDIO', args[0].strip( '\n' ) )
-            publisher.sendMessage( "AUDIO_OUTPUT", args[0] )
-            publisher.sendMessage( "AUDIO_GAUGE", args[1] )
-            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... %d%%' %
+            pub.sendMessage( 'LOG_AUDIO', arg1=args[0].strip( '\n' ) )
+            pub.sendMessage( "AUDIO_OUTPUT", arg1=args[0] )
+            pub.sendMessage( "AUDIO_GAUGE", arg1=args[1] )
+            pub.sendMessage( "AUDIO_LABEL", arg1='Extracting audio... %d%%' %
                              args[1] )
         elif phase == 'audio_finish':
-            publisher.sendMessage( "AUDIO_GAUGE", 100 )
-            publisher.sendMessage( "AUDIO_LABEL", 'Extracting audio... 100%' )
+            pub.sendMessage( "AUDIO_GAUGE", arg1=100 )
+            pub.sendMessage( "AUDIO_LABEL", arg1='Extracting audio... 100%' )
         elif phase == 'mux_start':
-            publisher.sendMessage( "MUX_GAUGE", 0 )
-            publisher.sendMessage( "MUX_LABEL", 'Multiplexing... 0%' )
+            pub.sendMessage( "MUX_GAUGE", arg1=0 )
+            pub.sendMessage( "MUX_LABEL", arg1='Multiplexing... 0%' )
         elif phase == 'mux_during':
-            publisher.sendMessage( 'LOG_MUX', args[0].strip( '\n' ) )
-            publisher.sendMessage( "MUX_OUTPUT", args[0] )
-            publisher.sendMessage( "MUX_GAUGE", args[1] )
-            publisher.sendMessage( "MUX_LABEL", 'Multiplexing... %d%%' %
+            pub.sendMessage( 'LOG_MUX', arg1=args[0].strip( '\n' ) )
+            pub.sendMessage( "MUX_OUTPUT", arg1=args[0] )
+            pub.sendMessage( "MUX_GAUGE", arg1=args[1] )
+            pub.sendMessage( "MUX_LABEL", arg1='Multiplexing... %d%%' %
                              args[1] )
         elif phase == 'mux_finish':
-            publisher.sendMessage( "MUX_GAUGE", 100 )
-            publisher.sendMessage( "MUX_LABEL", 'Multiplexing... 100%' )
+            pub.sendMessage( "MUX_GAUGE", arg1=100 )
+            pub.sendMessage( "MUX_LABEL", arg1='Multiplexing... 100%' )
 
     def parseLine( self, type, line ):
         if type == 'video':
