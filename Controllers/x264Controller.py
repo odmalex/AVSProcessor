@@ -1,5 +1,6 @@
 import wx
 import os
+import shutil
 import socket
 from Views.x264View import x264View
 from Models.x264Model import x264Model
@@ -21,14 +22,10 @@ class x264Controller:
         self.generalId = 0
         self.avsFiles = []
 
-        pub.subscribe( self.updateQueueProcessingDirectory,
-                       'QUEUE_PROCESSING_DIRECTORY' )
-        pub.subscribe( self.updateQueueProcessedFiles,
-                             'QUEUE_PROCESSED_FILES' )
-        pub.subscribe( self.updateQueueProcessingStatus,
-                       'QUEUE_PROCESSING_STATUS' )
-        pub.subscribe( self.updateQueueProcessingStatuses,
-                       'QUEUE_PROCESSING_STATUSES' )
+        pub.subscribe( self.updateQueueProcessingDirectory, 'QUEUE_PROCESSING_DIRECTORY' )
+        pub.subscribe( self.updateQueueProcessedFiles, 'QUEUE_PROCESSED_FILES' )
+        pub.subscribe( self.updateQueueProcessingStatus, 'QUEUE_PROCESSING_STATUS' )
+        pub.subscribe( self.updateQueueProcessingStatuses, 'QUEUE_PROCESSING_STATUSES' )
         pub.subscribe( self.processingFinish, 'PROCESSING_FINISH' )
 
         self.x264.leonardoSettingsButton.Disable()
@@ -55,28 +52,24 @@ class x264Controller:
         tasks = self.x264Model.getTaskQueue()
         id = 0
         for task in tasks:
-            if task.getOptions()['outputDirectory'] == self.currentProcessingOutputDirectory:
-                break
+#            if task.getOptions()['hellasOnLineUse']:
+#                dirToCompare = task.getOptions()['inputDirectory']
+#            else:
+            dirToCompare = task.getOptions()['outputDirectory']
+            if dirToCompare == self.currentProcessingOutputDirectory:
+                break            
             id += 1
         self.setListItem( id, column, data )
 
     def loadOptions( self ):
-        self.x264.setProfileDirectory( Configuration.get( 'directories',
-                                                         'profile' ) )
-        self.x264.setInputDirectory( Configuration.get( 'directories',
-                                                         'input' ) )
-        self.x264.setOutputDirectory( Configuration.get( 'directories',
-                                                         'output' ) )
-        self.x264.setVideoOutputFormat( Configuration.get( 'videoSettings',
-                                                         'outputFormat' ) )
-        self.x264.setAudioOutputFormat( Configuration.get( 'audioSettings',
-                                                         'outputFormat' ) )
-        self.x264.setMuxOutputFormatList( Configuration.get( 'muxSettings',
-                                                         'outputFormatList' ) )
-        self.x264.setMuxOutputFormat( Configuration.get( 'muxSettings',
-                                                         'outputFormat' ) )
-        self.x264.setVideoTwoPass( Configuration.get( 'videoSettings',
-                                                         'twoPass' ) )
+        self.x264.setProfileDirectory( Configuration.get( 'directories', 'profile' ) )
+        self.x264.setInputDirectory( Configuration.get( 'directories', 'input' ) )
+        self.x264.setOutputDirectory( Configuration.get( 'directories', 'output' ) )
+        self.x264.setVideoOutputFormat( Configuration.get( 'videoSettings', 'outputFormat' ) )
+        self.x264.setAudioOutputFormat( Configuration.get( 'audioSettings', 'outputFormat' ) )
+        self.x264.setMuxOutputFormatList( Configuration.get( 'muxSettings', 'outputFormatList' ) )
+        self.x264.setMuxOutputFormat( Configuration.get( 'muxSettings', 'outputFormat' ) )
+        self.x264.setVideoTwoPass( Configuration.get( 'videoSettings', 'twoPass' ) )
         self.checkProfileDir()
 
         self.setX264Events()
@@ -188,6 +181,33 @@ class x264Controller:
             pub.sendMessage( 'LOG', arg1='i6' )
             self.generalId += 1
 
+    def hellasOnLineCase( self ):
+        
+        baseInputDir  = self.x264.getInputDirectory()
+        baseOutputDir = self.x264.getOutputDirectory()
+        bitrates      = Configuration.all['hellas_on_line']['bitrate']
+        sizes         = bitrates.keys()
+        
+        for avs in self.avsFiles:
+            baseAvsFile     = os.path.join(baseInputDir, avs)
+            avsBody, avsExt = os.path.splitext( avs )
+            tempInputDir    = QC.checkDirectory( os.path.join( baseInputDir, avsBody + '_TEMP' ) )
+            tempOutputDir   = QC.checkDirectory( os.path.join( baseOutputDir, avsBody ) )
+            for size in sizes:
+                newAvsFile = os.path.join(tempInputDir, avsBody + '_' + size + avsExt)
+                shutil.copyfile(baseAvsFile, newAvsFile)
+                            
+            columns = []
+            columns.append( tempInputDir )
+            columns.append( self.x264.getProfile() )
+            columns.append( "" )
+            columns.append( "Added" )
+            id  = self.addListItem( columns )
+            opt = self.getTaskOptions()
+            opt['inputDirectory']   = tempInputDir
+            opt['outputDirectory']  = tempOutputDir
+            self.x264Model.addTask( id, opt )
+        
 
     def eventAddTask( self, event ):
         if self.checkIntegrity():
@@ -199,6 +219,10 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
             else:
                 if Configuration.all['leonardo']['use']: ################# case of Leonardo naming scheme ################
                     self.leonardoCase()
+                
+                elif Configuration.all['hellas_on_line']['use']:
+                    self.hellasOnLineCase()
+                    
                 else:
                     columns = []
                     columns.append( self.x264.getInputDirectory() )
@@ -282,9 +306,19 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
             Configuration.set( True, 'leonardo', 'use' )
             Configuration.set( lines[0:4], 'multi_profile', 'arguments' )
             Configuration.set( lines[4], 'multi_profile', 'bitrate' )
+            
+        elif self.x264.getProfile() == 'HOL-multiprofile.Prfl':
+            Configuration.set( True, 'hellas_on_line', 'use' )
+            Configuration.set( False, 'leonardo', 'use' )
+            Configuration.set( lines[0], 'videoSettings', 'cmdOptions' )
+            Configuration.set( lines[1], 'audioSettings', 'bitrate' )
+            self.x264.setVideoCmdOptions( lines[0] )
+            self.x264.setAudioBitrate( lines[1] )
+            
         else:
             self.x264.leonardoSettingsButton.Disable()
             Configuration.set( False, 'leonardo', 'use' )
+            Configuration.set( False, 'hellas_on_line', 'use')
             self.x264.videoCmdOptionsStaticText.Enable()
             self.x264.videoCmdOptionsTextCtrl.Enable()
             self.x264.audioBitrateStaticText.Enable()
@@ -368,20 +402,21 @@ profile "%s". Please choose a different one.' % ( input, profile ), 'Warning',
 
     def getTaskOptions( self ):
         opt = {}
-        opt['inputDirectory'] = self.x264.getInputDirectory()
-        opt['outputDirectory'] = self.x264.getOutputDirectory()
-        opt['profileDirectory'] = self.x264.getProfileDirectory()
-        opt['profile'] = self.x264.getProfile()
-        opt['videoOutputFormat'] = self.x264.getVideoOutputFormat()
-        opt['videoCmdOptions'] = self.x264.getVideoCmdOptions()
-        opt['videoTwoPass'] = self.x264.getVideoTwoPass()
-        opt['audioOutputFormat'] = self.x264.getAudioOutputFormat()
-        opt['audioCmdOptions'] = self.x264.getAudioCmdOptions()
-        opt['audioBitrate'] = self.x264.getAudioBitrate()
+        opt['inputDirectory']       = self.x264.getInputDirectory()
+        opt['outputDirectory']      = self.x264.getOutputDirectory()
+        opt['profileDirectory']     = self.x264.getProfileDirectory()
+        opt['profile']              = self.x264.getProfile()
+        opt['videoOutputFormat']    = self.x264.getVideoOutputFormat()
+        opt['videoCmdOptions']      = self.x264.getVideoCmdOptions()
+        opt['videoTwoPass']         = self.x264.getVideoTwoPass()
+        opt['audioOutputFormat']    = self.x264.getAudioOutputFormat()
+        opt['audioCmdOptions']      = self.x264.getAudioCmdOptions()
+        opt['audioBitrate']         = self.x264.getAudioBitrate()
         opt['audioFrequencySample'] = self.x264.getAudioFrequencySample()
-        opt['muxOutputFormat'] = self.x264.getMuxOutputFormat()
-        opt['leonardoUse'] = Configuration.get( 'leonardo', 'use' )
-        opt['multi_profile'] = Configuration.get( 'multi_profile' )
+        opt['muxOutputFormat']      = self.x264.getMuxOutputFormat()
+        opt['leonardoUse']          = Configuration.get( 'leonardo', 'use' )
+        opt['multi_profile']        = Configuration.get( 'multi_profile' )
+        opt['hellasOnLineUse']      = Configuration.get( 'hellas_on_line', 'use' )
 
         return opt
 

@@ -1,5 +1,6 @@
 
 from Models.DB import DB
+from Models.QC import QC
 from Commands import Commands
 from Configuration import Configuration
 from pubsub import  pub
@@ -8,6 +9,8 @@ from subprocess import Popen, PIPE, STDOUT
 from pprint import pprint
 from Subprocess import Subprocess
 import datetime
+import os
+from pprint import pprint
 publisher = pub.Publisher()
 
 class RunModel:
@@ -26,12 +29,15 @@ class RunModel:
         for task in self.taskQueue:
             if task.getStatus() == 'Completed':
                 continue
-            t = Thread( target = self.processTask, args = ( task, ) )
+            
+#            t = Thread( target = self.processTask, args = ( task, ) )
 
-            t.start()
+#            t.start()
+            
             self.taskLogging( 'start', task )
 
-            t.join()
+            self.processTask( task )
+#            t.join()
             self.taskLogging( 'finish', task )
 
         self.taskLogging( 'finish_all' )
@@ -42,6 +48,7 @@ class RunModel:
         avsFiles            = task.getOptions()['avsFiles']
         totalFiles          = task.getOptions()['filesNumber']
 
+        # update db in case of leonardo multiprofile
         if task.getOptions()['leonardoUse']:
             prefix = self.inputDirectory.split( '\\' )[-1]
             id     = int( prefix )
@@ -60,9 +67,22 @@ class RunModel:
             i += 1
         self.avsFileLogging( 'finished', i, totalFiles )
 
+        # update db in case of leonardo multiprofile
         if task.getOptions()['leonardoUse']:
             self.db.updateTable( 'title', id, 'end_timestamp', datetime.datetime.now() )
             self.db.updateTable( 'title', id, 'status', 'Completed' )
+        
+        outputDir = task.getOptions()['outputDirectory']
+        videoFiles = QC.loadFiles(outputDir, Configuration.get( 'videoSettings', 'outputFormat' ))
+        for file in videoFiles:
+            fileToRemove = os.path.join(outputDir, file)            
+            os.remove(fileToRemove)
+            
+        audioFiles = QC.loadFiles(outputDir, Configuration.get( 'audioSettings', 'outputFormat' ))
+        for file in audioFiles:
+            if QC.regex(file, '.audio.'):
+                fileToRemove = os.path.join(outputDir, file)            
+                os.remove(fileToRemove)
 
     def runCommands( self ):
         self.commandLogging( 'init' )
@@ -133,8 +153,11 @@ class RunModel:
 
     def taskLogging( self, phase, task = None ):
         if phase == 'start':
-            pub.sendMessage( "QUEUE_PROCESSING_DIRECTORY",
-                             arg1=task.getOptions()['outputDirectory'] )
+#            if task.getOptions()['hellasOnLineUse']:
+#                procDir = task.getOptions()['inputDirectory']
+#            else:
+            procDir = task.getOptions()['outputDirectory']
+            pub.sendMessage( "QUEUE_PROCESSING_DIRECTORY", arg1=procDir )
             pub.sendMessage( "QUEUE_PROCESSING_STATUS", arg1='In Progress' )
             task.setStatus( 'In Progress' )
         elif phase == 'finish':
@@ -149,7 +172,7 @@ class RunModel:
             pub.sendMessage( "PROCESSING_FILE", arg1='Processing file: %s' %
                                    args[0] )
             sendData = '%d/%d' % ( args[1], args[2] )
-           
+            
             pub.sendMessage( "QUEUE_PROCESSED_FILES", arg1=sendData )
         elif phase == 'finished':
             pub.sendMessage( "QUEUE_PROCESSED_FILES", arg1=('%d/%d' %

@@ -10,12 +10,12 @@ setup( windows = [
                   {
                    "script": "main.py",
                    "icon_resources": [( 0, ".\\images\\odmedia.ico" )],
-                   "dest_base": "AVSProcessor_1.2.3"
+                   "dest_base": "AVSProcessor_1.3.0"
                   }
                  ],
        options = {
                   "py2exe":{
-                            "dist_dir": r"C:\Users\alexandros\Desktop\AVSProcessor 1.2.3",
+                            "dist_dir": r"C:\Users\alexandros\Desktop\AVSProcessor 1.3.0",
                             "packages": "pubsub"
                             }
                  }

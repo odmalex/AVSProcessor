@@ -18,6 +18,7 @@ class RunController:
         self.setSubscriber()
 
         self.runModel = RunModel( self.taskQueue )
+#        self.runAll()
         Thread( target = self.runAll ).start()
 
 
