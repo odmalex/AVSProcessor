@@ -45,15 +45,17 @@ class Commands:
                     self.audioBitrate = self.multiBitrate
 
         if self.hellasOnLineUse:
-            for ratio in [ '_43_', '_169_' ]:
-                if QC.regex(inputFile, ratio):
-                    self.videoCmdOptions += ' ' + Configuration.all['hellas_on_line']['sar'][ratio] + ' '                    
-                    break
+            #for ratio in [ '_43_', '_169_' ]:
+            if QC.regex(inputFile, '_43_'):
+                self.videoCmdOptions += ' ' + Configuration.all['hellas_on_line']['sar']['_43_'] + ' '
+            else:
+                self.videoCmdOptions += ' ' + Configuration.all['hellas_on_line']['sar']['_169_'] + ' '
+                    #break
             for size in [ '500', '1000', '1500', '2000', '2500' ]:
                 if QC.regex(inputFile, '_' + size):
                     self.videoCmdOptions += ' ' + Configuration.all['hellas_on_line']['bitrate'][size] + ' '                    
                     break
-
+                
         filename, extension = os.path.splitext( inputFile )
         self.input_avs = os.path.join( self.inputDirectory, inputFile )
 
