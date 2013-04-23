@@ -30,7 +30,7 @@ class DB:
             print 'Error in connecting database. Exiting...'
             exit()
 
-    def decrypt( self, encrypted ):
+    def decrypt( self, encrypted ):        
         final = ""
         for p in encrypted:
             final += chr( ord( p ) - 3 )

@@ -68,3 +68,7 @@ nosetests.xml
 .project
 
 .pydevproject
+
+*.pyc
+*.log
+*.ini
