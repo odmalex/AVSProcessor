@@ -47,6 +47,8 @@ class MainFrameController:
         dlg.Destroy()
         if result == wx.ID_OK:
             self.mainFrame.Destroy()
+            Configuration.set(False, 'leonardo', 'use')
+            Configuration.set(False, 'hellas_on_line', 'use')
             Configuration.save( Configuration.configurationFile )
             pub.sendMessage( 'LOG', arg1='i10' )
             pub.sendMessage( 'EXITING', message='' )
