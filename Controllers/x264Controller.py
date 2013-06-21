@@ -1,5 +1,6 @@
 import wx
 import os
+import sys
 import shutil
 import socket
 from Views.x264View import x264View
@@ -121,6 +122,12 @@ class x264Controller:
         filebody += leonardo['copyright'] + '_'
         filebody += leonardo['aspect_ratio'] + '_'
 
+        ## check aspect ration pattern
+        for avs in self.avsFiles:
+            if not (QC.regex( avs, '_43_' ) or QC.regex( avs, '_169_' )):
+                wx.MessageBox( 'No aspect ratio pattern ("_43_" or "_169_") found in the name of AVS file: \n\n' + avs, 'Warning', wx.OK )
+                return False
+
         for avs in self.avsFiles:
             title_id = self.x264Model.getNewTitleId()
             digits = 5
@@ -130,15 +137,13 @@ class x264Controller:
 
             avsSource = os.path.join( self.x264.getInputDirectory(), avs )
             avsSourceBody, avsSourceExt = os.path.splitext( avsSource )
-            if QC.regex( avs, '_43_' ):
-                sizes = multi_profile_sizes['_43_']
-            elif QC.regex( avs, '_169_' ):
-                sizes = multi_profile_sizes['_169_']
-            else:
-                print 'Aspect ratio not found in the avs filename. Exiting\n'
-                exit()
+            for avs in self.avsFiles:
+                if QC.regex( avs, '_43_' ):
+                    sizes = multi_profile_sizes['_43_']
+                else:
+                    sizes = multi_profile_sizes['_169_']
 
-
+            
             ## inserting a row in the title table
             args = ( title_id, prefix, avs, )
             args += ( QC.getKeyByValue( leonardo['language_list'], leonardo['language'] ), )
@@ -180,6 +185,8 @@ class x264Controller:
             self.x264Model.addTask( id, opt )
             pub.sendMessage( 'LOG', arg1='i6' )
             self.generalId += 1
+            
+            return True
 
     def hellasOnLineCase( self ):
         
