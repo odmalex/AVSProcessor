@@ -68,7 +68,7 @@ class MainFrameView( wx.Frame ):
 
     def __set_properties( self ):
         self.Center()
-        self.SetTitle( "AVS Processor 1.3.4" )
+        self.SetTitle( "AVS Processor 1.3.5" )
         _icon = wx.EmptyIcon()
         _icon.CopyFromBitmap( wx.Bitmap( ".\\images\\odmedia.ico",
                                          wx.BITMAP_TYPE_ANY ) )

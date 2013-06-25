@@ -186,7 +186,7 @@ class x264Controller:
             pub.sendMessage( 'LOG', arg1='i6' )
             self.generalId += 1
             
-            return True
+        return True
 
     def hellasOnLineCase( self ):
         
